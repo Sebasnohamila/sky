@@ -3,29 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Star Map - Manual Layering</title>
+    <title>Star Map - Final</title>
 
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
     <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
 
     <style>
-        /* ESTILO "CABALLEROS" */
         body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
 
-        /* CAPA 1: VIDEO DE CÁMARA (Fondo) */
+        /* CAPA 1: VIDEO CÁMARA (Fondo) */
         #webcam {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; z-index: 1; /* Al fondo */
+            object-fit: cover; z-index: 1;
         }
 
-        /* CAPA 2: ESCENA 3D (Transparente encima) */
+        /* CAPA 2: ESCENA 3D (Encima) */
         a-scene {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 2; /* Encima del video */
+            z-index: 2;
         }
 
-        /* CAPA 3: INTERFAZ UI */
+        /* CAPA 3: UI (Interfaz) */
         #ui-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 3; pointer-events: none;
@@ -35,18 +34,19 @@
         #splash {
             background: white; pointer-events: auto; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s;
+            transition: opacity 0.5s; text-align: center;
         }
 
         button {
-            padding: 20px 50px; background: black; color: white; border: none;
+            padding: 20px 40px; background: black; color: white; border: none;
             border-radius: 50px; font-size: 18px; font-weight: bold; margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
         #debug {
-            position: fixed; top: 10px; left: 10px; color: yellow; 
-            background: rgba(0,0,0,0.5); padding: 5px; font-family: monospace;
-            z-index: 4;
+            position: fixed; top: 10px; left: 10px; color: #00FF00; font-weight: bold;
+            background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 5px;
+            font-family: monospace; z-index: 4; font-size: 12px;
         }
     </style>
 </head>
@@ -55,13 +55,13 @@
 
     <video id="webcam" autoplay playsinline muted></video>
 
-    <div id="debug">Sistema listo.</div>
+    <div id="debug">Listo para iniciar.</div>
 
     <div id="ui-layer">
         <div id="splash">
-            <h1>MODO FUSIÓN</h1>
-            <p>Video de Caballeros + 3D de Estrellas</p>
-            <button id="btn-start">INICIAR</button>
+            <h2>MAPA ESTELAR</h2>
+            <p>GPS Real + Cámara Real</p>
+            <button id="btn-start">CONECTAR CON EL CIELO</button>
         </div>
     </div>
 
@@ -69,62 +69,81 @@
         
         <a-entity id="sky-container"></a-entity>
 
-        <a-box position="0 0 -10" color="red" scale="2 2 2" 
-               animation="property: rotation; to: 0 360 0; loop: true; dur: 3000">
-        </a-box>
-        <a-text value="SI VES ESTO, GANAMOS" position="0 2 -10" align="center" scale="2 2 2" color="yellow"></a-text>
-
-        <a-camera look-controls="enabled: true; magicWindowTrackingEnabled: true;" position="0 0 0"></a-camera>
+        <a-camera look-controls="enabled: true; reverseMouseDrag: true" position="0 0 0"></a-camera>
 
     </a-scene>
 
     <script>
+        // --- CONFIGURACIÓN ---
         const btn = document.getElementById('btn-start');
         const video = document.getElementById('webcam');
         const splash = document.getElementById('splash');
         const debug = document.getElementById('debug');
         const container = document.getElementById('sky-container');
 
-        // 1. INICIAR CÁMARA (Código Caballeros)
-        async function startCamera() {
-            try {
-                debug.innerText = "Accediendo a cámara...";
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' } // Cámara trasera
-                });
-                video.srcObject = stream;
-                debug.innerText = "Cámara OK. Renderizando estrellas...";
-            } catch (err) {
-                debug.innerText = "Error Cámara: " + err.message;
-                alert("No se pudo iniciar la cámara. Revisa permisos.");
-            }
-        }
-
-        // 2. GENERAR ESTRELLAS (Código A-Frame Puro)
+        // --- BASE DE DATOS DE ESTRELLAS ---
         const stars = {
             "SIRIUS":     { ra: 6.75, dec: -16.71, mag: -1.4, color: "#FFFFFF" },
             "Canopus":    { ra: 6.39, dec: -52.69, mag: -0.7, color: "#EEEEEE" },
-            "Betelgeuse": { ra: 5.91, dec: 7.40, mag: 0.5, color: "#FF4500" },
-            "Rigel":      { ra: 5.24, dec: -8.20, mag: 0.1, color: "#88CCFF" },
-            "Antares":    { ra: 16.49, dec: -26.43, mag: 1.0, color: "#FF4500" },
+            "Betelgeuse": { ra: 5.91, dec: 7.40, mag: 0.5, color: "#FF4500" }, // Orión
+            "Rigel":      { ra: 5.24, dec: -8.20, mag: 0.1, color: "#88CCFF" }, // Orión
+            "Antares":    { ra: 16.49, dec: -26.43, mag: 1.0, color: "#FF4500" }, // Escorpio
             "Vega":       { ra: 18.61, dec: 38.78, mag: 0.0, color: "#88CCFF" },
-            "Spica":      { ra: 13.42, dec: -11.16, mag: 0.9, color: "#88CCFF" },
+            "Spica":      { ra: 13.42, dec: -11.16, mag: 0.9, color: "#88CCFF" }, // Virgo
             "Cruz del Sur":{ ra: 12.44, dec: -63.09, mag: 0.7, color: "#88CCFF" },
-            "Dubhe":      { ra: 11.06, dec: 61.75, mag: 1.8, color: "#FFAA00" }
+            "Dubhe":      { ra: 11.06, dec: 61.75, mag: 1.8, color: "#FFAA00" } // Osa Mayor
         };
+        
+        const constellations = [
+            ["Betelgeuse", "Rigel"], ["Alpha Cent", "Cruz del Sur"]
+        ];
 
-        function initStars() {
-            // Simulamos ubicación Quito para cálculos
-            const observer = new Astronomy.Observer(-0.18, -78.46, 0);
+        // --- 1. INICIAR CÁMARA (Mismo método que funcionó) ---
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                debug.innerText = "Error Cámara: " + err.message;
+                debug.style.color = "red";
+            }
+        }
+
+        // --- 2. OBTENER GPS REAL ---
+        function startGPS() {
+            debug.innerText = "Buscando GPS...";
+            if (!navigator.geolocation) {
+                renderSky(-0.18, -78.46); // Fallback a Quito
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    debug.innerText = `GPS: ${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)}`;
+                    renderSky(pos.coords.latitude, pos.coords.longitude);
+                },
+                (err) => {
+                    debug.innerText = "GPS falló. Usando simulación (Quito).";
+                    renderSky(-0.18, -78.46);
+                },
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        }
+
+        // --- 3. MATEMÁTICAS Y RENDERIZADO ---
+        function renderSky(lat, lon) {
+            container.innerHTML = ""; // Limpiar
             const date = new Date();
+            const observer = new Astronomy.Observer(lat, lon, 0);
 
+            // A. ESTRELLAS
             for (const [name, data] of Object.entries(stars)) {
-                // Cálculo matemático manual
                 const equator = new Astronomy.Equator(data.ra, data.dec, 2000.0);
                 const horizon = Astronomy.Horizon(date, observer, equator.ra, equator.dec, 'normal');
                 
-                // Conversión a 3D
-                const r = 30; // Radio de distancia
+                // Conversión 3D
+                const r = 40; 
                 const theta = horizon.azimuth * (Math.PI / 180);
                 const phi = horizon.altitude * (Math.PI / 180);
 
@@ -132,38 +151,65 @@
                 const y = r * Math.sin(phi);
                 const z = -r * Math.cos(phi) * Math.cos(theta);
 
-                // Crear Esfera
+                // Esfera
                 const s = document.createElement('a-sphere');
                 s.setAttribute('position', `${x} ${y} ${z}`);
-                s.setAttribute('radius', 0.2);
+                s.setAttribute('radius', 0.4); // Grandes para que se vean bien
                 s.setAttribute('color', data.color);
-                s.setAttribute('shader', 'flat'); // Importante para que brille
+                s.setAttribute('shader', 'flat'); 
                 container.appendChild(s);
 
-                // Crear Texto
+                // Texto
                 const t = document.createElement('a-text');
                 t.setAttribute('value', name);
-                t.setAttribute('position', `${x} ${y - 0.5} ${z}`);
+                t.setAttribute('position', `${x} ${y - 1} ${z}`);
                 t.setAttribute('align', 'center');
-                t.setAttribute('scale', '1.5 1.5 1.5');
+                t.setAttribute('scale', '2 2 2');
                 t.setAttribute('look-at', '[camera]');
                 container.appendChild(t);
             }
+
+            // B. VÍA LÁCTEA (Efecto visual)
+            // Centro galáctico aprox en Sagitario
+            const centerRA = 17.76; const centerDEC = -29.00; 
+            for(let i=0; i<60; i++) {
+                // Pequeña dispersión aleatoria
+                const ra = centerRA + (Math.random()-0.5)*2;
+                const dec = centerDEC + (Math.random()-0.5)*30;
+                
+                const eq = new Astronomy.Equator(ra, dec, 2000.0);
+                const hor = Astronomy.Horizon(date, observer, eq.ra, eq.dec, 'normal');
+                
+                const r = 35;
+                const th = hor.azimuth * (Math.PI/180);
+                const ph = hor.altitude * (Math.PI/180);
+                
+                const x = r * Math.cos(ph) * Math.sin(th);
+                const y = r * Math.sin(ph);
+                const z = -r * Math.cos(ph) * Math.cos(th);
+                
+                const p = document.createElement('a-sphere');
+                p.setAttribute('position', `${x} ${y} ${z}`);
+                p.setAttribute('radius', Math.random()*0.2);
+                p.setAttribute('color', '#9933FF'); // Violeta
+                p.setAttribute('opacity', 0.6);
+                p.setAttribute('shader', 'flat');
+                container.appendChild(p);
+            }
         }
 
-        // 3. SECUENCIA DE ARRANQUE
+        // --- INICIO ---
         btn.addEventListener('click', async () => {
-            // Ocultar Splash
             splash.style.opacity = 0;
             setTimeout(() => splash.style.display = 'none', 500);
 
-            // Iniciar Video
+            // 1. Arrancar Video
             await startCamera();
+            
+            // 2. Arrancar GPS y Estrellas
+            startGPS();
 
-            // Iniciar Estrellas
-            initStars();
-
-            // Permisos de Sensores (iOS)
+            // 3. Permisos Sensores (iOS)
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().catch(console.error);
             }
