@@ -2,143 +2,146 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Mapa Estelar AR - Vía Láctea</title>
+    <title>Mapa Estelar AR - Completo</title>
+    
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script type='text/javascript' src='https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js'></script>
     <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+    <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
 
     <style>
-        body { margin: 0; overflow: hidden; font-family: sans-serif; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* Interfaz de usuario superpuesta */
         #overlay {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 9999;
             display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+            padding-bottom: 30px;
         }
+        
         #btn-start {
-            pointer-events: auto; margin-bottom: 30px; padding: 15px 40px;
-            background: linear-gradient(45deg, #6b00ff, #00d4ff);
+            pointer-events: auto;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white; border: none; border-radius: 50px;
-            font-size: 18px; font-weight: bold; text-transform: uppercase;
-            box-shadow: 0 0 20px rgba(107, 0, 255, 0.6);
-            cursor: pointer; transition: transform 0.2s;
+            font-size: 18px; font-weight: bold; letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
         }
+        
         #btn-start:active { transform: scale(0.95); }
-        #status {
-            margin-bottom: 10px; background: rgba(0, 0, 0, 0.6);
-            color: #00d4ff; padding: 5px 10px; border-radius: 5px; font-size: 12px;
+        
+        #status-box {
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            color: #00ffcc;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            text-align: center;
+            max-width: 80%;
         }
     </style>
 </head>
 
 <body>
     <div id="overlay">
-        <div id="status">Esperando activación...</div>
-        <button id="btn-start">EXPLORAR CIELO</button>
+        <div id="status-box">Listo para explorar. Pulsa el botón.</div>
+        <button id="btn-start">ACTIVAR AR</button>
     </div>
 
     <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: false; videoTexture: true;' vr-mode-ui="enabled: false">
         
         <a-entity id="sky-container"></a-entity>
 
-        <a-camera gps-camera rotation-reader look-controls="enabled: true" far="1000"></a-camera>
+        <a-camera gps-camera rotation-reader look-controls="enabled: true" far="2000"></a-camera>
+
     </a-scene>
 
     <script>
-        // ==========================================
-        // 1. BASE DE DATOS DE ESTRELLAS (J2000)
-        // ==========================================
+        // =========================================================
+        // 1. BASE DE DATOS ASTRONÓMICA (Coordenadas J2000)
+        // =========================================================
         const stars = {
-            // --- ORION ---
-            "Betelgeuse": { ra: 5.919, dec: 7.407, mag: 0.5, color: "#FF5733" },
-            "Rigel":      { ra: 5.242, dec: -8.202, mag: 0.1, color: "#ADD8E6" },
+            // --- ORION (Visible ahora al Este/Cenit) ---
+            "Betelgeuse": { ra: 5.919, dec: 7.407, mag: 0.5, color: "#FF5733" }, // Roja
+            "Rigel":      { ra: 5.242, dec: -8.202, mag: 0.1, color: "#ADD8E6" }, // Azul
             "Bellatrix":  { ra: 5.418, dec: 6.349, mag: 1.6, color: "#FFFFFF" },
-            "Mintaka":    { ra: 5.533, dec: -0.299, mag: 2.2, color: "#FFFFFF" },
-            "Alnilam":    { ra: 5.603, dec: -1.201, mag: 1.7, color: "#FFFFFF" },
-            "Alnitak":    { ra: 5.679, dec: -1.942, mag: 1.7, color: "#FFFFFF" },
+            "Mintaka":    { ra: 5.533, dec: -0.299, mag: 2.2, color: "#FFFFFF" }, // Cinturón
+            "Alnilam":    { ra: 5.603, dec: -1.201, mag: 1.7, color: "#FFFFFF" }, // Cinturón
+            "Alnitak":    { ra: 5.679, dec: -1.942, mag: 1.7, color: "#FFFFFF" }, // Cinturón
             "Saiph":      { ra: 5.795, dec: -9.669, mag: 2.0, color: "#FFFFFF" },
 
-            // --- ESCORPIO (SCORPIUS) ---
-            "Antares":    { ra: 16.490, dec: -26.432, mag: 1.0, color: "#FF4500" }, // Corazón rojo
-            "Graffias":   { ra: 16.086, dec: -19.805, mag: 2.5, color: "#FFFFFF" }, // Cabeza
-            "Dschubba":   { ra: 16.005, dec: -22.622, mag: 2.2, color: "#FFFFFF" }, // Cabeza
-            "Shaula":     { ra: 17.561, dec: -37.103, mag: 1.6, color: "#FFFFFF" }, // Aguijón
-            "Sargas":     { ra: 17.622, dec: -42.993, mag: 1.8, color: "#FFFFFF" }, // Cola
+            // --- CAN MAYOR (Sirio) ---
+            "SIRIUS":     { ra: 6.752, dec: -16.716, mag: -1.4, color: "#FFFFFF" }, // La más brillante
 
-            // --- SAGITARIO (La Tetera / Centro Galáctico) ---
+            // --- ESCORPIO ---
+            "Antares":    { ra: 16.490, dec: -26.432, mag: 1.0, color: "#FF4500" },
+            "Graffias":   { ra: 16.086, dec: -19.805, mag: 2.5, color: "#FFFFFF" },
+            "Shaula":     { ra: 17.561, dec: -37.103, mag: 1.6, color: "#FFFFFF" },
+
+            // --- SAGITARIO (La Tetera) ---
             "KausAust":   { ra: 18.402, dec: -34.384, mag: 1.7, color: "#ADD8E6" },
             "Nunki":      { ra: 18.918, dec: -26.296, mag: 2.0, color: "#FFFFFF" },
-            "Ascella":    { ra: 19.044, dec: -29.880, mag: 2.6, color: "#FFFFFF" },
             "KausMed":    { ra: 18.463, dec: -29.828, mag: 2.7, color: "#FFA500" },
 
             // --- VIRGO ---
             "Spica":      { ra: 13.421, dec: -11.161, mag: 0.9, color: "#ADD8E6" },
-            "Vindemiatrix":{ ra: 13.036, dec: 10.959, mag: 2.8, color: "#FFFF00" },
             "Porrima":    { ra: 12.693, dec: -1.450, mag: 2.7, color: "#FFFFFF" },
-            "Auva":       { ra: 12.928, dec: 3.398, mag: 3.3, color: "#FF4500" },
+            "Vindemiatrix":{ ra: 13.036, dec: 10.959, mag: 2.8, color: "#FFFF00" },
 
-            // --- OSA MAYOR (Big Dipper) ---
+            // --- OSA MAYOR ---
             "Dubhe":      { ra: 11.062, dec: 61.751, mag: 1.8, color: "#FFA500" },
             "Merak":      { ra: 11.030, dec: 56.382, mag: 2.3, color: "#FFFFFF" },
             "Alioth":     { ra: 12.900, dec: 55.959, mag: 1.7, color: "#FFFFFF" },
             "Alkaid":     { ra: 13.792, dec: 49.313, mag: 1.8, color: "#ADD8E6" },
 
-            // --- CRUZ DEL SUR (Crux) ---
+            // --- CRUZ DEL SUR ---
             "Acrux":      { ra: 12.443, dec: -63.099, mag: 0.7, color: "#ADD8E6" },
-            "Becrux":     { ra: 12.795, dec: -59.688, mag: 1.2, color: "#ADD8E6" },
             "Gacrux":     { ra: 12.519, dec: -57.113, mag: 1.6, color: "#FF4500" },
-            "Decrux":     { ra: 12.250, dec: -58.750, mag: 2.7, color: "#FFFFFF" },
 
-             // --- ESTRELLAS CLAVE (Navegación) ---
-            "Sirius":     { ra: 6.752, dec: -16.716, mag: -1.4, color: "#FFFFFF" },
+            // --- ESTRELLAS CLAVE ---
             "Canopus":    { ra: 6.399, dec: -52.696, mag: -0.7, color: "#FFFFFF" },
             "Vega":       { ra: 18.616, dec: 38.784, mag: 0.0, color: "#ADD8E6" },
             "Arcturus":   { ra: 14.261, dec: 19.182, mag: -0.05, color: "#FFA500" }
         };
 
-        // ==========================================
-        // 2. CONEXIONES (Para dibujar las líneas)
-        // ==========================================
+        // Pares de estrellas para dibujar líneas
         const constellations = [
-            // Orión
-            ["Betelgeuse", "Alnitak"], ["Alnitak", "Alnilam"], ["Alnilam", "Mintaka"], 
-            ["Mintaka", "Bellatrix"], ["Betelgeuse", "Bellatrix"], ["Alnitak", "Saiph"], ["Mintaka", "Rigel"],
-            
-            // Escorpio (Cola simplificada)
-            ["Antares", "Graffias"], ["Antares", "Dschubba"], ["Antares", "Shaula"], ["Shaula", "Sargas"],
-
-            // Sagitario (Tetera)
-            ["KausAust", "KausMed"], ["KausMed", "Ascella"], ["Ascella", "Nunki"], ["Nunki", "KausMed"],
-            
-            // Virgo (Diamante central)
-            ["Spica", "Porrima"], ["Porrima", "Auva"], ["Auva", "Vindemiatrix"], ["Vindemiatrix", "Spica"],
-
-            // Osa Mayor
-            ["Dubhe", "Merak"], ["Merak", "Alioth"], ["Alioth", "Alkaid"],
-
-            // Cruz del Sur
-            ["Gacrux", "Acrux"], ["Becrux", "Decrux"]
+            ["Betelgeuse", "Alnitak"], ["Alnitak", "Alnilam"], ["Alnilam", "Mintaka"], ["Mintaka", "Bellatrix"], ["Betelgeuse", "Bellatrix"], ["Alnitak", "Saiph"], ["Mintaka", "Rigel"], // Orión
+            ["Antares", "Graffias"], ["Antares", "Shaula"], // Escorpio
+            ["KausAust", "KausMed"], ["KausMed", "Nunki"], // Sagitario
+            ["Spica", "Porrima"], ["Porrima", "Vindemiatrix"], ["Vindemiatrix", "Spica"], // Virgo
+            ["Dubhe", "Merak"], ["Merak", "Alioth"], ["Alioth", "Alkaid"], // Osa Mayor
+            ["Gacrux", "Acrux"] // Cruz del Sur
         ];
 
+        // Referencias al DOM
         const container = document.getElementById('sky-container');
-        const statusDiv = document.getElementById('status');
+        const statusBox = document.getElementById('status-box');
         const btn = document.getElementById('btn-start');
 
-        // ==========================================
-        // 3. LÓGICA MATEMÁTICA Y RENDERIZADO
-        // ==========================================
-
+        // =========================================================
+        // 2. FUNCIONES MATEMÁTICAS (Astronomía -> 3D)
+        // =========================================================
         function calculateVector(ra, dec, observer, date) {
             const equator = new Astronomy.Equator(ra, dec, 2000.0);
             const horizon = Astronomy.Horizon(date, observer, equator.ra, equator.dec, 'normal');
             const az = horizon.azimuth;
             const alt = horizon.altitude;
 
-            if (alt < -10) return null; // Ocultar si está muy abajo del horizonte
+            // Si está muy debajo del horizonte (-20 grados), no la dibujamos para ahorrar recursos
+            if (alt < -20) return null; 
 
-            const r = 25; // Distancia virtual
+            // Convertir coordenadas esféricas a vector 3D (A-Frame)
+            const r = 30; // Radio de la esfera celeste virtual
             const theta = az * (Math.PI / 180);
             const phi = alt * (Math.PI / 180);
 
+            // Nota: En A-Frame WebAR, el Norte es -Z, Este es +X, Arriba es +Y
             const x = r * Math.cos(phi) * Math.sin(theta);
             const y = r * Math.sin(phi);
             const z = -r * Math.cos(phi) * Math.cos(theta);
@@ -146,110 +149,147 @@
             return { x, y, z };
         }
 
+        // =========================================================
+        // 3. GENERADOR DE VÍA LÁCTEA
+        // =========================================================
         function createMilkyWay(observer, date) {
-            // Generamos una "nube" de partículas cerca de Sagitario (Centro Galáctico)
-            // El centro galáctico está aprox en RA 17.7h, DEC -29°
+            // Centro galáctico aprox: RA 17.76, DEC -29.00 (Sagitario)
             const galacticCenterRA = 17.76;
             const galacticCenterDEC = -29.00;
 
-            for (let i = 0; i < 60; i++) {
-                // Dispersión aleatoria alrededor del centro
-                const raOffset = (Math.random() - 0.5) * 2; // +/- 1 hora
-                const decOffset = (Math.random() - 0.5) * 30; // +/- 15 grados a lo largo de la banda
+            for (let i = 0; i < 80; i++) {
+                // Crear nube dispersa
+                const raOffset = (Math.random() - 0.5) * 3; // +/- 1.5 horas
+                const decOffset = (Math.random() - 0.5) * 40; // +/- 20 grados
 
                 const pos = calculateVector(galacticCenterRA + raOffset, galacticCenterDEC + decOffset, observer, date);
                 
                 if (pos) {
                     const el = document.createElement('a-sphere');
                     el.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
-                    el.setAttribute('radius', Math.random() * 0.15); // Tamaños variados
-                    el.setAttribute('color', Math.random() > 0.5 ? "#8A2BE2" : "#4B0082"); // Violetas y púrpuras
-                    el.setAttribute('opacity', 0.6);
+                    el.setAttribute('radius', Math.random() * 0.2 + 0.05); 
+                    el.setAttribute('color', Math.random() > 0.5 ? "#9400D3" : "#4B0082"); // Violeta/Indigo
+                    el.setAttribute('opacity', 0.5);
                     el.setAttribute('material', 'shader: flat; transparent: true');
                     container.appendChild(el);
                 }
             }
-            console.log("Vía Láctea generada");
         }
 
-        function initSky(lat, lon) {
-            container.innerHTML = "";
+        // =========================================================
+        // 4. INICIALIZAR EL CIELO
+        // =========================================================
+        function initSky(lat, lon, isSimulated = false) {
+            container.innerHTML = ""; // Limpiar
             const date = new Date();
             const observer = new Astronomy.Observer(lat, lon, 0);
 
-            // 1. DIBUJAR ESTRELLAS
+            // A. DIBUJAR ESTRELLAS
             for (const [name, data] of Object.entries(stars)) {
                 const pos = calculateVector(data.ra, data.dec, observer, date);
                 if (pos) {
-                    // Guardamos la posición calculada en el objeto para usarla en las líneas
-                    stars[name].pos = pos; 
+                    stars[name].pos = pos; // Guardar para líneas
 
-                    // Esfera
+                    // 1. Esfera de la estrella
                     const sphere = document.createElement('a-sphere');
                     sphere.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
-                    const size = Math.max(0.05, 0.2 - (data.mag * 0.05)); // Más brillo = más grande
+                    // Mag menor = Más brillo = Más grande
+                    const size = Math.max(0.05, 0.3 - (data.mag * 0.1)); 
                     sphere.setAttribute('radius', size);
                     sphere.setAttribute('color', data.color);
+                    sphere.setAttribute('material', 'shader: flat'); // Shader plano para que brille siempre
                     container.appendChild(sphere);
 
-                    // Texto
-                    if (data.mag < 1.5) { // Solo nombrar las brillantes para no saturar
+                    // 2. Nombre (Texto)
+                    // Solo mostramos texto si es muy brillante (mag < 1.8) para no saturar
+                    if (data.mag < 1.8) {
                         const text = document.createElement('a-text');
                         text.setAttribute('value', name);
                         text.setAttribute('position', `${pos.x} ${pos.y - 0.5} ${pos.z}`);
                         text.setAttribute('align', 'center');
                         text.setAttribute('scale', '1.5 1.5 1.5');
-                        text.setAttribute('look-at', '[camera]');
+                        text.setAttribute('look-at', '[camera]'); // Componente extra: mira siempre a cámara
+                        text.setAttribute('color', '#00ffcc');
                         container.appendChild(text);
                     }
                 }
             }
 
-            // 2. DIBUJAR LÍNEAS (CONSTELACIONES)
-            const lineMaterial = "color: white; opacity: 0.4";
+            // B. DIBUJAR LÍNEAS DE CONSTELACIONES
             constellations.forEach(pair => {
-                const starA = stars[pair[0]];
-                const starB = stars[pair[1]];
-
-                // Solo dibujar línea si AMBAS estrellas son visibles
-                if (starA && starB && starA.pos && starB.pos) {
+                const s1 = stars[pair[0]];
+                const s2 = stars[pair[1]];
+                if (s1 && s2 && s1.pos && s2.pos) {
                     const line = document.createElement('a-entity');
-                    line.setAttribute('line', `start: ${starA.pos.x} ${starA.pos.y} ${starA.pos.z}; end: ${starB.pos.x} ${starB.pos.y} ${starB.pos.z}; ${lineMaterial}`);
+                    line.setAttribute('line', `start: ${s1.pos.x} ${s1.pos.y} ${s1.pos.z}; end: ${s2.pos.x} ${s2.pos.y} ${s2.pos.z}; color: white; opacity: 0.3`);
                     container.appendChild(line);
                 }
             });
 
-            // 3. DIBUJAR VÍA LÁCTEA
+            // C. DIBUJAR VÍA LÁCTEA
             createMilkyWay(observer, date);
 
-            statusDiv.innerText = `Cielo cargado para Lat: ${lat.toFixed(2)}`;
+            // D. ACTUALIZAR ESTADO
+            if (isSimulated) {
+                statusBox.innerText = "⚠️ GPS falló. Usando modo simulación (Quito).";
+                statusBox.style.color = "#ffaa00";
+            } else {
+                statusBox.innerText = `Cielo cargado. Lat: ${lat.toFixed(2)}`;
+            }
         }
 
-        // ==========================================
-        // 4. INICIO Y PERMISOS
-        // ==========================================
+        // =========================================================
+        // 5. GESTIÓN DE SENSORES Y FALLBACK
+        // =========================================================
         btn.addEventListener('click', () => {
+            statusBox.innerText = "Solicitando acceso a sensores...";
+            
+            // Permisos iOS 13+
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(state => {
-                    if (state === 'granted') startGPS();
-                }).catch(console.error);
+                DeviceOrientationEvent.requestPermission()
+                    .then(state => {
+                        if (state === 'granted') {
+                            startGPS();
+                        } else {
+                            alert("Se requiere permiso de orientación para AR.");
+                            startGPS(); // Intentamos igual
+                        }
+                    })
+                    .catch(e => startGPS());
             } else {
-                startGPS();
+                startGPS(); // Android / PC
             }
             btn.style.display = 'none';
         });
 
         function startGPS() {
             if (navigator.geolocation) {
-                statusDiv.innerText = "Localizando...";
+                statusBox.innerText = "Buscando satélites... (Max 5 seg)";
+                
+                // Configuración GPS con Timeout corto
                 navigator.geolocation.getCurrentPosition(
-                    (p) => initSky(p.coords.latitude, p.coords.longitude),
-                    (e) => alert("Error GPS: " + e.message),
-                    { enableHighAccuracy: true }
+                    (p) => {
+                        // ÉXITO
+                        initSky(p.coords.latitude, p.coords.longitude, false);
+                    },
+                    (e) => {
+                        // ERROR DE GPS
+                        fallbackLocation();
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
                 );
             } else {
-                alert("GPS no disponible");
+                fallbackLocation();
             }
+        }
+
+        function fallbackLocation() {
+            // Ubicación por defecto: Quito, Ecuador
+            // Así garantizamos que la app funcione aunque el GPS falle
+            const defLat = -0.1807;
+            const defLon = -78.4678;
+            console.warn("Usando ubicación fallback");
+            initSky(defLat, defLon, true);
         }
     </script>
 </body>
