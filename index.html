@@ -1,204 +1,256 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Experiencia Caballeros VR</title>
-    
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <meta charset="utf-8">
+    <title>Mapa Estelar AR - Vía Láctea</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script type='text/javascript' src='https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
 
     <style>
-        /* Estilos Generales */
-        body { margin: 0; padding: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #000; }
-        
-        /* --- CAPA 1: FONDO VR (A-Frame) --- */
-        #vr-scene {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; 
-            /* Truco: Opacidad 0 inicial para que no se vea negro de golpe si falla algo, aunque el splash lo cubre */
-            opacity: 1; 
+        body { margin: 0; overflow: hidden; font-family: sans-serif; }
+        #overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
         }
-
-        /* --- CAPA 2: MODELO 3D (Model Viewer) --- */
-        model-viewer {
-            width: 100vw; height: 100vh;
-            background-color: transparent; 
-            position: absolute; top: 0; left: 0; 
-            z-index: 1; 
-            outline: none;
-            --poster-color: transparent;
+        #btn-start {
+            pointer-events: auto; margin-bottom: 30px; padding: 15px 40px;
+            background: linear-gradient(45deg, #6b00ff, #00d4ff);
+            color: white; border: none; border-radius: 50px;
+            font-size: 18px; font-weight: bold; text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(107, 0, 255, 0.6);
+            cursor: pointer; transition: transform 0.2s;
         }
-
-        /* --- BOTÓN DE WHATSAPP --- */
-        #whatsapp-button {
-            position: fixed; bottom: 25px; right: 25px; z-index: 9999;
-            width: 42px; height: 42px; background-color: transparent;
-            display: flex; align-items: center; justify-content: center;
-            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
-            transition: transform 0.3s ease; opacity: 0; pointer-events: none;
-            border: none; text-decoration: none;
+        #btn-start:active { transform: scale(0.95); }
+        #status {
+            margin-bottom: 10px; background: rgba(0, 0, 0, 0.6);
+            color: #00d4ff; padding: 5px 10px; border-radius: 5px; font-size: 12px;
         }
-        #whatsapp-button img { width: 100%; height: 100%; object-fit: contain; }
-        #whatsapp-button:hover { transform: scale(1.1); }
-        body.loaded #whatsapp-button { opacity: 1; pointer-events: auto; }
-
-        /* Pantalla de Carga */
-        #splash-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: white;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 999; 
-            /* Transición más lenta para el desvanecimiento suave */
-            transition: opacity 1.5s ease-out, visibility 1.5s; 
-        }
-
-        #company-logo { max-width: 150px; margin-bottom: 40px; }
-        #loader-container { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px;
-            border-radius: 50%; border-left-color: #333;
-            animation: spin 1s linear infinite; margin-bottom: 15px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .loading-text { color: #666; font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; font-weight: bold; }
-        
-        #error-message { color: #e74c3c; margin-top: 20px; display: none; text-align: center; font-size: 14px; padding: 0 20px; }
-        
-        #start-button {
-            display: none; margin-top: 20px; padding: 15px 35px;
-            background-color: #000; color: white;
-            border: none; border-radius: 30px;
-            font-size: 14px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15); transition: transform 0.2s ease;
-        }
-        #start-button:active { transform: scale(0.96); }
     </style>
 </head>
-<body>
 
-    <div id="splash-screen">
-        <img src="logo.png" alt="Bhastian" id="company-logo" onerror="this.style.display='none'">
-        
-        <div id="loader-container">
-            <div class="spinner"></div>
-            <div class="loading-text" id="progress-text">Cargando 0%</div>
-        </div>
-        
-        <div id="error-message">
-            No se pudo cargar el modelo.<br>
-            <small>Verifica el nombre del archivo y la conexión.</small>
-        </div>
-        
-        <button id="start-button">VER EXPERIENCIA</button>
+<body>
+    <div id="overlay">
+        <div id="status">Esperando activación...</div>
+        <button id="btn-start">EXPLORAR CIELO</button>
     </div>
 
-    <audio id="bg-audio" src="audio.mp3" loop preload="auto"></audio>
+    <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: false; videoTexture: true;' vr-mode-ui="enabled: false">
+        
+        <a-entity id="sky-container"></a-entity>
 
-    <a-scene id="vr-scene" embedded vr-mode-ui="enabled: false" loading-screen="enabled: false" renderer="alpha: true">
-        <a-assets>
-            <img id="bg-image" src="fondo.jpg" crossorigin="anonymous">
-        </a-assets>
-
-        <a-sky src="#bg-image" 
-               radius="50" 
-               rotation="0 -90 0">
-        </a-sky>
-
-        <a-camera position="0 0 0" look-controls="enabled: true; touchEnabled: false"></a-camera>
+        <a-camera gps-camera rotation-reader look-controls="enabled: true" far="1000"></a-camera>
     </a-scene>
 
-    <model-viewer 
-        id="viewer"
-        src="bolapoder1.glb"
-        alt="CABALLEROS DEL ZOODIACO 3D"
-        loading="eager"
-        camera-controls
-        auto-rotate
-        shadow-intensity="1"
-        ar
-        ar-modes="webxr scene-viewer quick-look">
-    </model-viewer>
-
-    <a href="https://wa.me/593983088889" id="whatsapp-button">
-        <img src="whatsapp.png" alt="WhatsApp" onerror="this.style.display='none'">
-    </a>
-
     <script>
-        const modelViewer = document.querySelector('#viewer');
-        const sceneEl = document.querySelector('a-scene');
-        const loaderContainer = document.getElementById('loader-container');
-        const startButton = document.getElementById('start-button');
-        const splashScreen = document.getElementById('splash-screen');
-        const errorMsg = document.getElementById('error-message');
-        const progressText = document.getElementById('progress-text');
-        const bgAudio = document.getElementById('bg-audio');
+        // ==========================================
+        // 1. BASE DE DATOS DE ESTRELLAS (J2000)
+        // ==========================================
+        const stars = {
+            // --- ORION ---
+            "Betelgeuse": { ra: 5.919, dec: 7.407, mag: 0.5, color: "#FF5733" },
+            "Rigel":      { ra: 5.242, dec: -8.202, mag: 0.1, color: "#ADD8E6" },
+            "Bellatrix":  { ra: 5.418, dec: 6.349, mag: 1.6, color: "#FFFFFF" },
+            "Mintaka":    { ra: 5.533, dec: -0.299, mag: 2.2, color: "#FFFFFF" },
+            "Alnilam":    { ra: 5.603, dec: -1.201, mag: 1.7, color: "#FFFFFF" },
+            "Alnitak":    { ra: 5.679, dec: -1.942, mag: 1.7, color: "#FFFFFF" },
+            "Saiph":      { ra: 5.795, dec: -9.669, mag: 2.0, color: "#FFFFFF" },
 
-        // Estados de carga
-        let isModelLoaded = false;
-        let isSceneLoaded = false;
+            // --- ESCORPIO (SCORPIUS) ---
+            "Antares":    { ra: 16.490, dec: -26.432, mag: 1.0, color: "#FF4500" }, // Corazón rojo
+            "Graffias":   { ra: 16.086, dec: -19.805, mag: 2.5, color: "#FFFFFF" }, // Cabeza
+            "Dschubba":   { ra: 16.005, dec: -22.622, mag: 2.2, color: "#FFFFFF" }, // Cabeza
+            "Shaula":     { ra: 17.561, dec: -37.103, mag: 1.6, color: "#FFFFFF" }, // Aguijón
+            "Sargas":     { ra: 17.622, dec: -42.993, mag: 1.8, color: "#FFFFFF" }, // Cola
 
-        // Función centralizada para chequear si TODO está listo
-        function checkAllLoaded() {
-            if (isModelLoaded && isSceneLoaded) {
-                console.log("Todo listo: Modelo + Escenario");
-                // Pequeño delay de seguridad para asegurar renderizado de textura
-                setTimeout(() => {
-                    loaderContainer.style.display = 'none';
-                    startButton.style.display = 'block';
-                }, 500); 
+            // --- SAGITARIO (La Tetera / Centro Galáctico) ---
+            "KausAust":   { ra: 18.402, dec: -34.384, mag: 1.7, color: "#ADD8E6" },
+            "Nunki":      { ra: 18.918, dec: -26.296, mag: 2.0, color: "#FFFFFF" },
+            "Ascella":    { ra: 19.044, dec: -29.880, mag: 2.6, color: "#FFFFFF" },
+            "KausMed":    { ra: 18.463, dec: -29.828, mag: 2.7, color: "#FFA500" },
+
+            // --- VIRGO ---
+            "Spica":      { ra: 13.421, dec: -11.161, mag: 0.9, color: "#ADD8E6" },
+            "Vindemiatrix":{ ra: 13.036, dec: 10.959, mag: 2.8, color: "#FFFF00" },
+            "Porrima":    { ra: 12.693, dec: -1.450, mag: 2.7, color: "#FFFFFF" },
+            "Auva":       { ra: 12.928, dec: 3.398, mag: 3.3, color: "#FF4500" },
+
+            // --- OSA MAYOR (Big Dipper) ---
+            "Dubhe":      { ra: 11.062, dec: 61.751, mag: 1.8, color: "#FFA500" },
+            "Merak":      { ra: 11.030, dec: 56.382, mag: 2.3, color: "#FFFFFF" },
+            "Alioth":     { ra: 12.900, dec: 55.959, mag: 1.7, color: "#FFFFFF" },
+            "Alkaid":     { ra: 13.792, dec: 49.313, mag: 1.8, color: "#ADD8E6" },
+
+            // --- CRUZ DEL SUR (Crux) ---
+            "Acrux":      { ra: 12.443, dec: -63.099, mag: 0.7, color: "#ADD8E6" },
+            "Becrux":     { ra: 12.795, dec: -59.688, mag: 1.2, color: "#ADD8E6" },
+            "Gacrux":     { ra: 12.519, dec: -57.113, mag: 1.6, color: "#FF4500" },
+            "Decrux":     { ra: 12.250, dec: -58.750, mag: 2.7, color: "#FFFFFF" },
+
+             // --- ESTRELLAS CLAVE (Navegación) ---
+            "Sirius":     { ra: 6.752, dec: -16.716, mag: -1.4, color: "#FFFFFF" },
+            "Canopus":    { ra: 6.399, dec: -52.696, mag: -0.7, color: "#FFFFFF" },
+            "Vega":       { ra: 18.616, dec: 38.784, mag: 0.0, color: "#ADD8E6" },
+            "Arcturus":   { ra: 14.261, dec: 19.182, mag: -0.05, color: "#FFA500" }
+        };
+
+        // ==========================================
+        // 2. CONEXIONES (Para dibujar las líneas)
+        // ==========================================
+        const constellations = [
+            // Orión
+            ["Betelgeuse", "Alnitak"], ["Alnitak", "Alnilam"], ["Alnilam", "Mintaka"], 
+            ["Mintaka", "Bellatrix"], ["Betelgeuse", "Bellatrix"], ["Alnitak", "Saiph"], ["Mintaka", "Rigel"],
+            
+            // Escorpio (Cola simplificada)
+            ["Antares", "Graffias"], ["Antares", "Dschubba"], ["Antares", "Shaula"], ["Shaula", "Sargas"],
+
+            // Sagitario (Tetera)
+            ["KausAust", "KausMed"], ["KausMed", "Ascella"], ["Ascella", "Nunki"], ["Nunki", "KausMed"],
+            
+            // Virgo (Diamante central)
+            ["Spica", "Porrima"], ["Porrima", "Auva"], ["Auva", "Vindemiatrix"], ["Vindemiatrix", "Spica"],
+
+            // Osa Mayor
+            ["Dubhe", "Merak"], ["Merak", "Alioth"], ["Alioth", "Alkaid"],
+
+            // Cruz del Sur
+            ["Gacrux", "Acrux"], ["Becrux", "Decrux"]
+        ];
+
+        const container = document.getElementById('sky-container');
+        const statusDiv = document.getElementById('status');
+        const btn = document.getElementById('btn-start');
+
+        // ==========================================
+        // 3. LÓGICA MATEMÁTICA Y RENDERIZADO
+        // ==========================================
+
+        function calculateVector(ra, dec, observer, date) {
+            const equator = new Astronomy.Equator(ra, dec, 2000.0);
+            const horizon = Astronomy.Horizon(date, observer, equator.ra, equator.dec, 'normal');
+            const az = horizon.azimuth;
+            const alt = horizon.altitude;
+
+            if (alt < -10) return null; // Ocultar si está muy abajo del horizonte
+
+            const r = 25; // Distancia virtual
+            const theta = az * (Math.PI / 180);
+            const phi = alt * (Math.PI / 180);
+
+            const x = r * Math.cos(phi) * Math.sin(theta);
+            const y = r * Math.sin(phi);
+            const z = -r * Math.cos(phi) * Math.cos(theta);
+            
+            return { x, y, z };
+        }
+
+        function createMilkyWay(observer, date) {
+            // Generamos una "nube" de partículas cerca de Sagitario (Centro Galáctico)
+            // El centro galáctico está aprox en RA 17.7h, DEC -29°
+            const galacticCenterRA = 17.76;
+            const galacticCenterDEC = -29.00;
+
+            for (let i = 0; i < 60; i++) {
+                // Dispersión aleatoria alrededor del centro
+                const raOffset = (Math.random() - 0.5) * 2; // +/- 1 hora
+                const decOffset = (Math.random() - 0.5) * 30; // +/- 15 grados a lo largo de la banda
+
+                const pos = calculateVector(galacticCenterRA + raOffset, galacticCenterDEC + decOffset, observer, date);
+                
+                if (pos) {
+                    const el = document.createElement('a-sphere');
+                    el.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+                    el.setAttribute('radius', Math.random() * 0.15); // Tamaños variados
+                    el.setAttribute('color', Math.random() > 0.5 ? "#8A2BE2" : "#4B0082"); // Violetas y púrpuras
+                    el.setAttribute('opacity', 0.6);
+                    el.setAttribute('material', 'shader: flat; transparent: true');
+                    container.appendChild(el);
+                }
+            }
+            console.log("Vía Láctea generada");
+        }
+
+        function initSky(lat, lon) {
+            container.innerHTML = "";
+            const date = new Date();
+            const observer = new Astronomy.Observer(lat, lon, 0);
+
+            // 1. DIBUJAR ESTRELLAS
+            for (const [name, data] of Object.entries(stars)) {
+                const pos = calculateVector(data.ra, data.dec, observer, date);
+                if (pos) {
+                    // Guardamos la posición calculada en el objeto para usarla en las líneas
+                    stars[name].pos = pos; 
+
+                    // Esfera
+                    const sphere = document.createElement('a-sphere');
+                    sphere.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+                    const size = Math.max(0.05, 0.2 - (data.mag * 0.05)); // Más brillo = más grande
+                    sphere.setAttribute('radius', size);
+                    sphere.setAttribute('color', data.color);
+                    container.appendChild(sphere);
+
+                    // Texto
+                    if (data.mag < 1.5) { // Solo nombrar las brillantes para no saturar
+                        const text = document.createElement('a-text');
+                        text.setAttribute('value', name);
+                        text.setAttribute('position', `${pos.x} ${pos.y - 0.5} ${pos.z}`);
+                        text.setAttribute('align', 'center');
+                        text.setAttribute('scale', '1.5 1.5 1.5');
+                        text.setAttribute('look-at', '[camera]');
+                        container.appendChild(text);
+                    }
+                }
+            }
+
+            // 2. DIBUJAR LÍNEAS (CONSTELACIONES)
+            const lineMaterial = "color: white; opacity: 0.4";
+            constellations.forEach(pair => {
+                const starA = stars[pair[0]];
+                const starB = stars[pair[1]];
+
+                // Solo dibujar línea si AMBAS estrellas son visibles
+                if (starA && starB && starA.pos && starB.pos) {
+                    const line = document.createElement('a-entity');
+                    line.setAttribute('line', `start: ${starA.pos.x} ${starA.pos.y} ${starA.pos.z}; end: ${starB.pos.x} ${starB.pos.y} ${starB.pos.z}; ${lineMaterial}`);
+                    container.appendChild(line);
+                }
+            });
+
+            // 3. DIBUJAR VÍA LÁCTEA
+            createMilkyWay(observer, date);
+
+            statusDiv.innerText = `Cielo cargado para Lat: ${lat.toFixed(2)}`;
+        }
+
+        // ==========================================
+        // 4. INICIO Y PERMISOS
+        // ==========================================
+        btn.addEventListener('click', () => {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(state => {
+                    if (state === 'granted') startGPS();
+                }).catch(console.error);
+            } else {
+                startGPS();
+            }
+            btn.style.display = 'none';
+        });
+
+        function startGPS() {
+            if (navigator.geolocation) {
+                statusDiv.innerText = "Localizando...";
+                navigator.geolocation.getCurrentPosition(
+                    (p) => initSky(p.coords.latitude, p.coords.longitude),
+                    (e) => alert("Error GPS: " + e.message),
+                    { enableHighAccuracy: true }
+                );
+            } else {
+                alert("GPS no disponible");
             }
         }
-
-        // --- 1. CARGA DEL MODELO 3D ---
-        modelViewer.addEventListener('progress', (event) => {
-            const percentage = Math.round(event.detail.totalProgress * 100);
-            progressText.innerText = `Cargando ${percentage}%`;
-        });
-
-        modelViewer.addEventListener('load', () => {
-            console.log("Modelo 3D cargado.");
-            isModelLoaded = true;
-            checkAllLoaded();
-        });
-
-        modelViewer.addEventListener('error', (error) => {
-            console.error("Error cargando el modelo:", error);
-            loaderContainer.style.display = 'none';
-            errorMsg.style.display = 'block';
-        });
-
-        // --- 2. CARGA DEL ESCENARIO A-FRAME (FONDO) ---
-        if (sceneEl.hasLoaded) {
-            console.log("Escenario ya estaba cargado.");
-            isSceneLoaded = true;
-            checkAllLoaded();
-        } else {
-            sceneEl.addEventListener('loaded', () => {
-                console.log("Escenario A-Frame cargado.");
-                isSceneLoaded = true;
-                checkAllLoaded();
-            });
-        }
-
-        // --- 3. INICIO DE LA EXPERIENCIA ---
-        startButton.addEventListener('click', () => {
-            // Reproducir Audio
-            bgAudio.volume = 1.0;
-            bgAudio.play().catch(error => console.log("Error audio:", error));
-            
-            // Transición suave (Fade Out)
-            splashScreen.style.opacity = '0';
-            
-            // Esperamos a que termine la animación CSS (1.5s) para quitar el div
-            setTimeout(() => { 
-                splashScreen.style.visibility = 'hidden';
-                splashScreen.style.display = 'none'; // Seguridad
-                document.body.classList.add('loaded');
-            }, 1500);
-        });
-
     </script>
 </body>
 </html>
