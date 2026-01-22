@@ -1,85 +1,158 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <meta charset="utf-8">
-    <title>Buscador de Constelaciones WebAR</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Universo Completo - Modo Fijo</title>
+
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script type='text/javascript' src='https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js'></script>
-    
+    <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+
     <style>
-        body { margin: 0; overflow: hidden; }
-        /* Botón bonito para iniciar (necesario para iPhones) */
-        #start-btn {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 24px;
-            background: rgba(0, 255, 204, 0.8);
-            color: #000;
-            font-family: sans-serif;
-            font-weight: bold;
-            border: 2px solid #fff;
-            border-radius: 8px;
-            z-index: 9999;
-            cursor: pointer;
-        }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: monospace; }
+        #webcam { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+        a-scene { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+        #ui-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3; display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: none; }
+        #splash { background: rgba(0,0,0,0.9); pointer-events: auto; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: white; }
+        button { pointer-events: auto; padding: 20px 40px; background: #00D4FF; color: black; border: none; border-radius: 50px; font-size: 20px; font-weight: bold; margin-top: 20px; }
+        #debug { position: fixed; top: 10px; left: 10px; color: #00FF00; background: rgba(0,0,0,0.8); padding: 5px; z-index: 4; font-size: 14px; }
     </style>
 </head>
-
 <body>
 
-    <div id="start-btn">Comenzar Exploración</div>
+    <video id="webcam" autoplay playsinline muted></video>
+    <div id="debug">Sistema listo.</div>
 
-    <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: false; videoTexture: true;' vr-mode-ui="enabled: false">
+    <div id="ui-layer">
+        <div id="splash">
+            <h2>UNIVERSO TOTAL</h2>
+            <p>Torres de Referencia + Planetas + Estrellas</p>
+            <button id="btn-start">ACTIVAR</button>
+        </div>
+    </div>
 
-        <a-entity camera look-controls="enabled: false" id="camera-rig"></a-entity>
+    <a-scene embedded transparent="true" vr-mode-ui="enabled: false">
+        
+        <a-entity id="universe-container"></a-entity>
 
-        <a-entity id="constelacion-osa-mayor" position="0 15 -20" scale="2 2 2">
-            
-            <a-text value="OSA MAYOR" color="#00FFCC" position="0 -2 0" align="center" scale="5 5 5"></a-text>
+        <a-camera look-controls="enabled: true; reverseMouseDrag: true" position="0 0 0">
+            <a-ring position="0 0 -1" radius-inner="0.05" radius-outer="0.06" color="#00FF00" opacity="0.5" material="shader: flat"></a-ring>
+            <a-text value="N" position="0 0.1 -1" align="center" scale="0.2 0.2 0.2" color="red"></a-text>
+        </a-camera>
 
-            <a-sphere position="3.5 3.0 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
-            <a-sphere position="3.5 0.5 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
-            <a-sphere position="0.5 0.0 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
-            <a-sphere position="0.8 3.2 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
-            <a-sphere position="-1.5 3.8 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
-            <a-sphere position="-3.5 4.2 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
-            <a-sphere position="-6.0 2.5 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
+        <a-text value="NORTE" position="0 5 -20" color="red" align="center" scale="8 8 8" look-at="[camera]"></a-text>
+        <a-cylinder position="0 -10 -20" height="20" radius="0.5" color="red" opacity="0.5"></a-cylinder>
 
-            <a-entity line="start: 3.5 3.0 0; end: 3.5 0.5 0; color: #FFF; opacity: 0.5"></a-entity> <a-entity line="start: 3.5 0.5 0; end: 0.5 0.0 0; color: #FFF; opacity: 0.5"></a-entity> <a-entity line="start: 0.5 0.0 0; end: 0.8 3.2 0; color: #FFF; opacity: 0.5"></a-entity> <a-entity line="start: 0.8 3.2 0; end: 3.5 3.0 0; color: #FFF; opacity: 0.5"></a-entity> <a-entity line="start: 0.8 3.2 0; end: -1.5 3.8 0; color: #FFF; opacity: 0.5"></a-entity> <a-entity line="start: -1.5 3.8 0; end: -3.5 4.2 0; color: #FFF; opacity: 0.5"></a-entity> <a-entity line="start: -3.5 4.2 0; end: -6.0 2.5 0; color: #FFF; opacity: 0.5"></a-entity> </a-entity>
+        <a-text value="SUR" position="0 5 20" color="blue" align="center" scale="8 8 8" look-at="[camera]"></a-text>
+        <a-cylinder position="0 -10 20" height="20" radius="0.5" color="blue" opacity="0.5"></a-cylinder>
+
+        <a-text value="ESTE" position="20 5 0" color="yellow" align="center" scale="8 8 8" look-at="[camera]"></a-text>
+        <a-cylinder position="20 -10 0" height="20" radius="0.5" color="yellow" opacity="0.5"></a-cylinder>
+
+        <a-text value="OESTE" position="-20 5 0" color="green" align="center" scale="8 8 8" look-at="[camera]"></a-text>
+        <a-cylinder position="-20 -10 0" height="20" radius="0.5" color="green" opacity="0.5"></a-cylinder>
 
     </a-scene>
 
     <script>
-        // Script para manejar permisos en iOS y arrancar la experiencia
-        const btn = document.getElementById("start-btn");
-        const cameraRig = document.getElementById("camera-rig");
+        const btn = document.getElementById('btn-start');
+        const video = document.getElementById('webcam');
+        const splash = document.getElementById('splash');
+        const container = document.getElementById('universe-container');
+        const debug = document.getElementById('debug');
 
-        btn.addEventListener("click", function() {
-            // Intentar pedir permisos de orientación (necesario para iOS 13+)
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') {
-                            startExperience();
-                        } else {
-                            alert("Necesitas dar permisos de orientación para ver las constelaciones.");
-                        }
-                    })
-                    .catch(console.error);
-            } else {
-                // Android y otros no requieren permiso explícito
-                startExperience();
+        // --- DATOS FIJOS (Sin cálculos complejos) ---
+        // Posiciones manuales relativas (X, Y, Z) simulando el cielo de Enero 2026
+        const celestialObjects = [
+            // --- PLANETAS (Enero 2026 aprox) ---
+            // Júpiter (Brillante en Geminis, cerca del Este-Cenit)
+            { name: "JUPITER", x: 15, y: 25, z: -5, color: "#FFCC99", size: 2.0, type: "planet" },
+            // Marte (Oeste al anochecer)
+            { name: "MARTE", x: -18, y: 10, z: -5, color: "#FF3300", size: 1.5, type: "planet" },
+            // Venus (Muy brillante al Oeste)
+            { name: "VENUS", x: -25, y: 15, z: 5, color: "#EEEEFF", size: 2.5, type: "planet" },
+            // Saturno (Oeste, bajo)
+            { name: "SATURNO", x: -20, y: 5, z: 10, color: "#FFEEAA", size: 1.8, type: "planet" },
+            // SOL (Para referencia de día)
+            { name: "SOL", x: -10, y: -20, z: 30, color: "#FFFF00", size: 5.0, type: "star" }, 
+
+            // --- ESTRELLAS ---
+            // Orión (Sur-Este alto)
+            { name: "Betelgeuse", x: 10, y: 30, z: 10, color: "#FF4400", size: 0.8, type: "star" },
+            { name: "Rigel", x: 15, y: 20, z: 15, color: "#88CCFF", size: 0.8, type: "star" },
+            { name: "Cinturon", x: 12, y: 25, z: 12, color: "#FFFFFF", size: 0.6, type: "star" },
+            
+            // Sirio (La más brillante, debajo de Orión)
+            { name: "SIRIUS", x: 15, y: 10, z: 20, color: "#FFFFFF", size: 1.2, type: "star" },
+            
+            // Cruz del Sur (Sur bajo)
+            { name: "CRUZ SUR", x: 0, y: 10, z: 25, color: "#88CCFF", size: 0.8, type: "star" },
+            
+            // Osa Mayor (Norte)
+            { name: "OSA MAYOR", x: 0, y: 20, z: -25, color: "#FFFFFF", size: 0.8, type: "star" },
+            
+            // Pléyades (Cerca de Júpiter)
+            { name: "PLEYADES", x: 5, y: 35, z: -5, color: "#4444FF", size: 1.0, type: "star" }
+        ];
+
+        function initUniverse() {
+            container.innerHTML = "";
+            
+            celestialObjects.forEach(obj => {
+                // Esfera
+                const s = document.createElement('a-sphere');
+                s.setAttribute('position', `${obj.x} ${obj.y} ${obj.z}`);
+                s.setAttribute('radius', obj.size);
+                s.setAttribute('color', obj.color);
+                s.setAttribute('shader', 'flat'); // Brilla sin luz
+                container.appendChild(s);
+
+                // Texto Gigante
+                const t = document.createElement('a-text');
+                t.setAttribute('value', obj.name);
+                // Ponemos el texto un poco debajo del objeto
+                t.setAttribute('position', `${obj.x} ${obj.y - (obj.size + 1)} ${obj.z}`);
+                t.setAttribute('align', 'center');
+                t.setAttribute('scale', '4 4 4'); // Texto MUY grande
+                t.setAttribute('look-at', '[camera]'); // Siempre te mira a ti
+                t.setAttribute('color', obj.color);
+                container.appendChild(t);
+
+                // Si es un planeta, le ponemos un anillo extra para destacar
+                if (obj.type === "planet") {
+                    const ring = document.createElement('a-ring');
+                    ring.setAttribute('position', `${obj.x} ${obj.y} ${obj.z}`);
+                    ring.setAttribute('radius-inner', obj.size + 0.2);
+                    ring.setAttribute('radius-outer', obj.size + 0.4);
+                    ring.setAttribute('color', 'white');
+                    ring.setAttribute('shader', 'flat');
+                    ring.setAttribute('look-at', '[camera]');
+                    container.appendChild(ring);
+                }
+            });
+            
+            debug.innerText = "Objetos cargados manualmente.";
+        }
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Error camara", err);
+            }
+        }
+
+        btn.addEventListener('click', async () => {
+            splash.style.display = 'none';
+            await startCamera();
+            initUniverse();
+
+            // Permisos iOS
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().catch(console.error);
             }
         });
-
-        function startExperience() {
-            btn.style.display = 'none'; // Ocultar botón
-            // Activar el control de mirada
-            cameraRig.setAttribute('look-controls', 'enabled: true');
-            alert("¡Apunta hacia arriba y busca la Osa Mayor! (Gira 360 grados si no la ves)");
-        }
     </script>
 </body>
 </html>
