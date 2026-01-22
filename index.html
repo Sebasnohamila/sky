@@ -1,114 +1,85 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="utf-8">
-    <title>Visor de Constelaciones Web</title>
+    <title>Buscador de Constelaciones WebAR</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://unpkg.com/aframe-meshline-component@0.3.2/dist/aframe-meshline-component.min.js"></script>
-  </head>
-  <body>
-    <script>
-      // --- EL CEREBRO DE STELLARIUM ---
-      // Esta función convierte coordenadas astronómicas (RA/Dec) a posición 3D (x,y,z)
-      function getPositionFromRaDec(ra, dec, radius) {
-        // Convertir grados a radianes
-        var phi = (90 - dec) * (Math.PI / 180);
-        var theta = (ra + 180) * (Math.PI / 180); // Ajuste simple
-
-        var x = -(radius * Math.sin(phi) * Math.cos(theta));
-        var z = (radius * Math.sin(phi) * Math.sin(theta));
-        var y = (radius * Math.cos(phi));
-
-        return {x: x, y: y, z: z};
-      }
-
-      AFRAME.registerComponent('constellation-loader', {
-        init: function () {
-          var scene = this.el.sceneEl;
-          var radius = 20; // Distancia de las estrellas al usuario
-
-          // --- DATOS DE ORIÓN (Simplificado) ---
-          // RA (Ascensión Recta) y Dec (Declinación) son como Latitud/Longitud del cielo
-          const stars = {
-            "Betelgeuse": {ra: 88.79, dec: 7.40, color: "#FF5733"}, // Roja
-            "Rigel":      {ra: 78.63, dec: -8.20, color: "#33A1FF"}, // Azul
-            "Bellatrix":  {ra: 81.28, dec: 6.34, color: "#ADD8E6"},
-            "Saiph":      {ra: 86.93, dec: -9.66, color: "#FFFFFF"},
-            "Alnitak":    {ra: 85.18, dec: -1.94, color: "#FFFFFF"}, // Cinturón 1
-            "Alnilam":    {ra: 84.05, dec: -1.20, color: "#FFFFFF"}, // Cinturón 2
-            "Mintaka":    {ra: 83.00, dec: -0.29, color: "#FFFFFF"}  // Cinturón 3
-          };
-
-          // --- DIBUJAR LAS LÍNEAS (CONEXIONES) ---
-          // Pares de estrellas que forman el dibujo
-          const connections = [
-            ["Betelgeuse", "Bellatrix"], // Hombros
-            ["Bellatrix", "Mintaka"],
-            ["Mintaka", "Alnilam"],      // Cinturón
-            ["Alnilam", "Alnitak"],      // Cinturón
-            ["Alnitak", "Saiph"],        // Pierna
-            ["Saiph", "Rigel"],          // Pies (imaginario)
-            ["Rigel", "Mintaka"],        // Cuerpo
-            ["Betelgeuse", "Alnitak"]    // Cuerpo cruzado
-          ];
-
-          // 1. Crear las estrellas
-          for (const [name, data] of Object.entries(stars)) {
-            let pos = getPositionFromRaDec(data.ra, data.dec, radius);
-            
-            // Crear esfera (estrella)
-            let sphere = document.createElement('a-sphere');
-            sphere.setAttribute('position', pos);
-            sphere.setAttribute('radius', 0.15); // Tamaño aparente
-            sphere.setAttribute('color', data.color);
-            sphere.setAttribute('shader', 'flat');
-            
-            // Crear etiqueta de texto
-            let text = document.createElement('a-text');
-            text.setAttribute('value', name);
-            text.setAttribute('position', {x: pos.x, y: pos.y - 0.3, z: pos.z});
-            text.setAttribute('align', 'center');
-            text.setAttribute('scale', '1.5 1.5 1.5');
-            text.setAttribute('look-at', '[camera]'); // Que el texto siempre te mire a ti
-            
-            this.el.appendChild(sphere);
-            this.el.appendChild(text);
-          }
-
-          // 2. Dibujar las líneas
-          connections.forEach(pair => {
-            let startData = stars[pair[0]];
-            let endData = stars[pair[1]];
-            
-            let startPos = getPositionFromRaDec(startData.ra, startData.dec, radius);
-            let endPos = getPositionFromRaDec(endData.ra, endData.dec, radius);
-
-            let line = document.createElement('a-entity');
-            
-            // Usamos la sintaxis estándar de línea de A-Frame
-            line.setAttribute('line', {
-              start: startPos,
-              end: endPos,
-              color: '#4444FF', // Color azul tenue tipo holograma
-              opacity: 0.6
-            });
-
-            this.el.appendChild(line);
-          });
+    <script type='text/javascript' src='https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js'></script>
+    
+    <style>
+        body { margin: 0; overflow: hidden; }
+        /* Botón bonito para iniciar (necesario para iPhones) */
+        #start-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: rgba(0, 255, 204, 0.8);
+            color: #000;
+            font-family: sans-serif;
+            font-weight: bold;
+            border: 2px solid #fff;
+            border-radius: 8px;
+            z-index: 9999;
+            cursor: pointer;
         }
-      });
-    </script>
+    </style>
+</head>
 
-    <a-scene background="color: #000005">
-      
-      <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 0 0">
-         <a-text value="Busca a Orion" position="0 -0.5 -1" color="grey" align="center"></a-text>
-      </a-entity>
+<body>
 
-      <a-entity constellation-loader></a-entity>
+    <div id="start-btn">Comenzar Exploración</div>
 
-      <a-grid position="0 -2 0"></a-grid>
+    <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: false; videoTexture: true;' vr-mode-ui="enabled: false">
+
+        <a-entity camera look-controls="enabled: false" id="camera-rig"></a-entity>
+
+        <a-entity id="constelacion-osa-mayor" position="0 15 -20" scale="2 2 2">
+            
+            <a-text value="OSA MAYOR" color="#00FFCC" position="0 -2 0" align="center" scale="5 5 5"></a-text>
+
+            <a-sphere position="3.5 3.0 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
+            <a-sphere position="3.5 0.5 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
+            <a-sphere position="0.5 0.0 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
+            <a-sphere position="0.8 3.2 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
+            <a-sphere position="-1.5 3.8 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
+            <a-sphere position="-3.5 4.2 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
+            <a-sphere position="-6.0 2.5 0" radius="0.3" color="#FFF" material="shader: flat"></a-sphere>
+
+            <a-entity line="start: 3.5 3.0 0; end: 3.5 0.5 0; color: #FFF; opacity: 0.5"></a-entity> <a-entity line="start: 3.5 0.5 0; end: 0.5 0.0 0; color: #FFF; opacity: 0.5"></a-entity> <a-entity line="start: 0.5 0.0 0; end: 0.8 3.2 0; color: #FFF; opacity: 0.5"></a-entity> <a-entity line="start: 0.8 3.2 0; end: 3.5 3.0 0; color: #FFF; opacity: 0.5"></a-entity> <a-entity line="start: 0.8 3.2 0; end: -1.5 3.8 0; color: #FFF; opacity: 0.5"></a-entity> <a-entity line="start: -1.5 3.8 0; end: -3.5 4.2 0; color: #FFF; opacity: 0.5"></a-entity> <a-entity line="start: -3.5 4.2 0; end: -6.0 2.5 0; color: #FFF; opacity: 0.5"></a-entity> </a-entity>
 
     </a-scene>
-  </body>
+
+    <script>
+        // Script para manejar permisos en iOS y arrancar la experiencia
+        const btn = document.getElementById("start-btn");
+        const cameraRig = document.getElementById("camera-rig");
+
+        btn.addEventListener("click", function() {
+            // Intentar pedir permisos de orientación (necesario para iOS 13+)
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            startExperience();
+                        } else {
+                            alert("Necesitas dar permisos de orientación para ver las constelaciones.");
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                // Android y otros no requieren permiso explícito
+                startExperience();
+            }
+        });
+
+        function startExperience() {
+            btn.style.display = 'none'; // Ocultar botón
+            // Activar el control de mirada
+            cameraRig.setAttribute('look-controls', 'enabled: true');
+            alert("¡Apunta hacia arriba y busca la Osa Mayor! (Gira 360 grados si no la ves)");
+        }
+    </script>
+</body>
 </html>
