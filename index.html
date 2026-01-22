@@ -1,113 +1,27 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Planetario Móvil</title>
-  
-  <script src="https://d3js.org/d3.v3.min.js"></script>
-  <script src="https://d3js.org/d3.geo.projection.v0.min.js"></script>
-  <script src="https://ofrohn.github.io/celestial-demo/lib/celestial.min.js"></script>
-  
-  <style>
-    body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Stellarium VR Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     
-    /* El mapa ocupará todo */
-    #celestial-map {
-      width: 100vw;
-      height: 100vh;
-      cursor: move;
-    }
-
-    /* Botón flotante para activar el sensor */
-    #btn-ar {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid white;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-family: sans-serif;
-      z-index: 999;
-      display: block;
-    }
-  </style>
-</head>
-<body>
-
-  <div id="celestial-map"></div>
-  <button id="btn-ar" onclick="activarSensores()">📲 Activar Movimiento</button>
-
-  <script type="text/javascript">
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  </head>
+  <body>
     
-    // 2. Configuración para que parezca Stellarium
-    var config = { 
-      width: 0,           // 0 = pantalla completa automática
-      projection: "airy", // Proyección realista tipo ojo de pez
-      center: [-78.46, -0.18], // Coordenadas iniciales (Ecuador)
-      background: { fill: "#000000" }, // Fondo negro puro
-      adaptable: true,    // Se adapta al tamaño del cel
-      interactive: true,
+    <a-scene vr-mode-ui="enabled: false" loading-screen="dotsColor: white; backgroundColor: black">
       
-      // ESTRELLAS Y FORMAS
-      stars: { show: true, limit: 6 },
-      constellations: { 
-        show: true,    // Líneas
-        names: true,   // Nombres (Orion, etc)
-        desig: true,   // Designaciones
-        linestyle: { stroke: "#cccccc", width: 1.5, opacity: 0.6 } 
-      },
-      mw: { show: true, style: { fill: "#ffffff", opacity: 0.15 } }, // Vía Láctea
-      lines: { graticule: { show: false } }, // Ocultar cuadrícula fea
-      
-      // RUTA DE DATOS (Importante para que no salga pantalla negra)
-      // Usamos los datos alojados en el demo oficial para asegurar que carguen
-      datapath: "https://ofrohn.github.io/celestial-demo/data/"
-    };
+      <a-entity camera look-controls="reverseMouseDrag: true" position="0 0 0"></a-entity>
 
-    // 3. Iniciar el mapa
-    Celestial.display(config);
+      <a-sky 
+        id="cielo"
+        src="https://cdn.eso.org/images/screen/eso0932a.jpg" 
+        rotation="0 -90 0">
+      </a-sky>
 
-    // 4. Lógica del Giroscopio (Movimiento AR)
-    function activarSensores() {
-      // Ocultar botón
-      document.getElementById('btn-ar').style.display = 'none';
+      <a-text value="Centro Galactico" position="0 0 -4" align="center" color="#FFF" opacity="0.6" scale="1.5 1.5 1.5"></a-text>
 
-      // Pedir permiso en iOS 13+
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission()
-          .then(response => {
-            if (response == 'granted') {
-              window.addEventListener('deviceorientation', handleOrientation);
-            } else {
-              alert("Permiso denegado");
-            }
-          })
-          .catch(console.error);
-      } else {
-        // Android y PC
-        window.addEventListener('deviceorientation', handleOrientation);
-      }
-    }
+    </a-scene>
 
-    function handleOrientation(e) {
-      // Convertir datos del giroscopio a rotación del mapa
-      // e.alpha = brújula (0-360)
-      // e.beta = inclinación
-      
-      if(e.alpha && e.beta) {
-        // Celestial.rotate rota el mapa. 
-        // Invertimos alpha para que coincida con el movimiento natural
-        var yaw = -e.alpha; 
-        var pitch = e.beta - 90; // Ajuste para mirar al horizonte
-        
-        // Aplicamos la rotación
-        Celestial.rotate([yaw, pitch, 0]);
-      }
-    }
-  </script>
-</body>
+  </body>
 </html>
